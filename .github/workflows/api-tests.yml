@@ -32,14 +32,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # 🔥 THIS IS THE IMPORTANT PART
       - name: Start json-server
         run: |
-          json-server --watch db.json --port 3000 &
-          echo "Waiting for json-server to be ready..."
-          for i in {1..10}; do
-            curl -s http://localhost:3000/posts && break
+          nohup json-server --watch db.json --port 3000 > json-server.log 2>&1 &
+          echo "Waiting for json-server..."
+          for i in {1..15}; do
+            curl -s http://localhost:3000/posts && echo "Server is up!" && break
             sleep 1
           done
+          curl http://localhost:3000/posts
 
       - name: Run pytest
         env:
@@ -54,3 +56,10 @@ jobs:
         with:
           name: pytest-report
           path: reports/
+
+      - name: Upload json-server logs (DEBUG)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: json-server-logs
+          path: json-server.log
