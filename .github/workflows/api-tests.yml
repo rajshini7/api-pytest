@@ -11,49 +11,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Python (CI does NOT use your .venv)
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # 3️⃣ Setup Node.js (for json-server)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "18"
 
-      # 4️⃣ Install json-server
       - name: Install json-server
         run: npm install -g json-server
 
-      # 5️⃣ Install Python dependencies
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 6️⃣ Start local API server (background)
       - name: Start json-server
         run: |
           json-server --watch db.json --port 3000 &
+          echo "Waiting for json-server to be ready..."
+          for i in {1..10}; do
+            curl -s http://localhost:3000/posts && break
+            sleep 1
+          done
 
-      # 7️⃣ Run pytest
-      - name: Run API tests
+      - name: Run pytest
         env:
           BASE_URL: http://localhost:3000
         run: |
           pytest --cache-clear
           pytest -v
 
-      # 8️⃣ Upload test report
-      - name: Upload pytest report
+      - name: Upload report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pytest-html-report
+          name: pytest-report
           path: reports/
